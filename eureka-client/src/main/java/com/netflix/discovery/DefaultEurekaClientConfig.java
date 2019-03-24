@@ -380,6 +380,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public List<String> getEurekaServerServiceUrls(String myZone) {
+        // 获取 serviceUrl.myZone的serviceUrl，如果没有则获取默认zone为default的serviceUrl
         String serviceUrls = configInstance.getStringProperty(
                 namespace + CONFIG_EUREKA_SERVER_SERVICE_URL_PREFIX + "." + myZone, null).get();
         if (serviceUrls == null || serviceUrls.isEmpty()) {
@@ -391,7 +392,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
             return Arrays.asList(serviceUrls.split(URL_SEPARATOR));
         }
 
-        return new ArrayList<String>();
+        return new ArrayList<>();
     }
 
     /*

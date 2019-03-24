@@ -1,33 +1,7 @@
 Eureka
 =====
-[![Build Status](https://travis-ci.org/Netflix/eureka.svg?branch=master)](https://travis-ci.org/Netflix/eureka)
+> eureka-client注册流程  
 
-Eureka is a REST (Representational State Transfer) based service that is primarily used in the AWS cloud for locating services for the purpose of load balancing and failover of middle-tier servers.
-
-At Netflix, Eureka is used for the following purposes apart from playing a critical part in mid-tier load balancing.
-
-* For aiding Netflix Asgard - an open source service which makes cloud deployments easier, in  
-    + Fast rollback of versions in case of problems avoiding the re-launch of 100's of instances which 
-      could take a long time.
-    + In rolling pushes, for avoiding propagation of a new version to all instances in case of problems.
-
-* For our cassandra deployments to take instances out of traffic for maintenance.
-
-* For our memcached caching services to identify the list of nodes in the ring.
-
-* For carrying other additional application specific metadata about services for various other reasons.
-
-
-Building
-----------
-The build requires java8 because of some required libraries that are java8 (servo), but the source and target compatibility are still set to 1.7.
-
-
-Support
-----------
-[Eureka Google Group](https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)
-
-
-Documentation
---------------
-Please see [wiki](https://github.com/Netflix/eureka/wiki) for detailed documentation.
+- 主要类是：[DiscoveryClient](./eureka-client/src/main/java/com/netflix/discovery/DiscoveryClient.java)，加了一些注释，可以方便理解
+- 查看它的构造类，可以发现它初始化了一些信息和三个线程池，然后调用了**initScheduledTasks**方法
+- initScheduledTasks流程可以参照流程图[eureka-client注册流程图](./images/eureka-client注册流程.jpg)

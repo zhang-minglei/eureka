@@ -188,21 +188,31 @@ public class EndpointUtils {
      * @return The list of all eureka service urls for the eureka client to talk to
      */
     public static List<String> getServiceUrlsFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
-        List<String> orderedUrls = new ArrayList<String>();
+        List<String> orderedUrls = new ArrayList<>();
+        // 获取region
         String region = getRegion(clientConfig);
+        // 获取region下配置的zones
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        // 没有配置zone，则使用默认zone为default
         if (availZones == null || availZones.length == 0) {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
         logger.debug("The availability zone for the given region {} are {}", region, availZones);
+        /**
+         * 获取要使用的zone的便宜位置offSet
+         * 如果preferSameZone=true，则优先使用=instanceZone的zone
+         * 否则使用第一个zone
+         */
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
+        // 获取该zone下的serviceUrl列表
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[myZoneOffset]);
         if (serviceUrls != null) {
             orderedUrls.addAll(serviceUrls);
         }
         int currentOffset = myZoneOffset == (availZones.length - 1) ? 0 : (myZoneOffset + 1);
+        // 取出所有可用zone的所有serviceUrl，添加到orderedUrls
         while (currentOffset != myZoneOffset) {
             serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[currentOffset]);
             if (serviceUrls != null) {
@@ -215,6 +225,7 @@ public class EndpointUtils {
             }
         }
 
+        // 没有可用的serviceUrl则报错
         if (orderedUrls.size() < 1) {
             throw new IllegalArgumentException("DiscoveryClient: invalid serviceUrl specified!");
         }
@@ -223,6 +234,9 @@ public class EndpointUtils {
 
     /**
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
+     *
+     * 主要功能同{@link com.netflix.discovery.endpoint.EndpointUtils#getServiceUrlsFromConfig}相同，只不过是返回
+     * 了map的格式，key是zone名称，value是serviceUrl列表
      *
      * @param clientConfig the clientConfig to use
      * @param instanceZone The zone in which the client resides

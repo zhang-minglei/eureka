@@ -148,6 +148,7 @@ public class InstanceInfo {
     @Auto
     private volatile Long lastUpdatedTimestamp;
     @Auto
+    // 该instance在client端最后被修改的时间戳
     private volatile Long lastDirtyTimestamp;
     @Auto
     private volatile ActionType actionType;

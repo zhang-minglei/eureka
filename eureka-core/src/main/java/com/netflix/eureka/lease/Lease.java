@@ -22,7 +22,7 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
  * accumulation of instances in {@link AbstractInstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
- *
+ * <p>
  * If a lease elapses without renewals, it will eventually expire consequently
  * marking the associated {@link T} for immediate eviction - this is similar to
  * an explicit cancellation except that there is no communication between the
@@ -34,7 +34,7 @@ public class Lease<T> {
 
     enum Action {
         Register, Cancel, Renew
-    };
+    }
 
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
@@ -76,6 +76,7 @@ public class Lease<T> {
     /**
      * Mark the service as up. This will only take affect the first time called,
      * subsequent calls will be ignored.
+     * 将服务标记为up，这只会在第一次调用，后续调用会被忽略
      */
     public void serviceUp() {
         if (serviceUpTimestamp == 0) {
@@ -94,16 +95,19 @@ public class Lease<T> {
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      */
     public boolean isExpired() {
-        return isExpired(0l);
+        return isExpired(0L);
     }
 
     /**
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
-     *
+     * <p>
      * Note that due to renew() doing the 'wrong" thing and setting lastUpdateTimestamp to +duration more than
      * what it should be, the expiry will actually be 2 * duration. This is a minor bug and should only affect
      * instances that ungracefully shutdown. Due to possible wide ranging impact to existing usage, this will
      * not be fixed.
+     * <p>
+     * evictionTimestamp>0 或者当前时间>下一轮的续约时间
+     * 比如在1分的时候续约，则在1分+2*duration的时候如果没有续约，则返回true
      *
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
      */

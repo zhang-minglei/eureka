@@ -145,6 +145,7 @@ public class ApplicationResource {
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
+        // 基础信息校验
         if (isBlank(info.getId())) {
             return Response.status(400).entity("Missing instanceId").build();
         } else if (isBlank(info.getHostName())) {
@@ -182,6 +183,7 @@ public class ApplicationResource {
             }
         }
 
+        // 调用register方法
         registry.register(info, "true".equals(isReplication));
         return Response.status(204).build();  // 204 to be backwards compatible
     }

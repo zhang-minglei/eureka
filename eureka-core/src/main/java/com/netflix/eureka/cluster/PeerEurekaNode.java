@@ -136,6 +136,7 @@ public class PeerEurekaNode {
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
+                    @Override
                     public EurekaHttpResponse<Void> execute() {
                         return replicationClient.register(info);
                     }

@@ -393,6 +393,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * this information to all peer eureka nodes. If this is replication event
      * from other replica nodes then it is not replicated.
      *
+     * eureka服务端api入口{@link com.netflix.eureka.resources.ApplicationResource#addInstance(InstanceInfo, String)}
+     *
      * @param info
      *            the {@link InstanceInfo} to be registered and replicated.
      * @param isReplication
@@ -401,11 +403,13 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     @Override
     public void register(final InstanceInfo info, final boolean isReplication) {
+        //租期值设置
         int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;
         if (info.getLeaseInfo() != null && info.getLeaseInfo().getDurationInSecs() > 0) {
             leaseDuration = info.getLeaseInfo().getDurationInSecs();
         }
         super.register(info, leaseDuration, isReplication);
+        // 同步给其他eureka
         replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
     }
 
@@ -415,6 +419,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * @see com.netflix.eureka.registry.InstanceRegistry#renew(java.lang.String,
      * java.lang.String, long, boolean)
      */
+    @Override
     public boolean renew(final String appName, final String id, final boolean isReplication) {
         if (super.renew(appName, id, isReplication)) {
             replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);

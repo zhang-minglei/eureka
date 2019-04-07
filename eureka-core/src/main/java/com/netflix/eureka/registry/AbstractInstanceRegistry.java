@@ -185,6 +185,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     /**
      * Registers a new instance with a given duration.
      * 服务注册方法
+     * registry结构：ConcurrentHashMap<appName, Map<instanceId, Lease<InstanceInfo>>>
      *
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)
      */
@@ -192,8 +193,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         try {
             read.lock();
+            // appName作为map的key，获取指定key的value值
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
+            // 如果value为null，则初始化这个map
             if (gMap == null) {
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<>();
                 gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
@@ -231,7 +234,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (existingLease != null) {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
+            // 把注册信息添加进map
             gMap.put(registrant.getId(), lease);
+
             synchronized (recentRegisteredQueue) {
                 recentRegisteredQueue.add(new Pair<>(
                         System.currentTimeMillis(),
@@ -258,6 +263,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
             // If the lease is registered with UP status, set lease service up timestamp
             if (InstanceStatus.UP.equals(registrant.getStatus())) {
+                // 设置服务up时间
                 lease.serviceUp();
             }
             registrant.setActionType(ActionType.ADDED);
@@ -342,6 +348,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @see com.netflix.eureka.lease.LeaseManager#renew(java.lang.String, java.lang.String, boolean)
      */
+    @Override
     public boolean renew(String appName, String id, boolean isReplication) {
         RENEW.increment(isReplication);
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);

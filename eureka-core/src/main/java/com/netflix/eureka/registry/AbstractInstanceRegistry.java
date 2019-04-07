@@ -304,35 +304,45 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected boolean internalCancel(String appName, String id, boolean isReplication) {
         try {
             read.lock();
+            // 取消次数加1
             CANCEL.increment(isReplication);
+            // 获取
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
+            // 移除
             if (gMap != null) {
                 leaseToCancel = gMap.remove(id);
             }
+            // 将取消信息添加到取消队列中，用于信息统计
             synchronized (recentCanceledQueue) {
-                recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
+                recentCanceledQueue.add(new Pair<>(System.currentTimeMillis(), appName + "(" + id + ")"));
             }
+            // 移除这个实例ID对于的状态
             InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
                 logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
             }
+            // 说明实例没有注册进来，返回false
             if (leaseToCancel == null) {
                 CANCEL_NOT_FOUND.increment(isReplication);
                 logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
                 return false;
             } else {
+                // 修改下线时间为当前时间
                 leaseToCancel.cancel();
                 InstanceInfo instanceInfo = leaseToCancel.getHolder();
                 String vip = null;
                 String svip = null;
+                // 把instance的变化加入实例变化队列中
                 if (instanceInfo != null) {
                     instanceInfo.setActionType(ActionType.DELETED);
                     recentlyChangedQueue.add(new RecentlyChangedItem(leaseToCancel));
                     instanceInfo.setLastUpdatedTimestamp();
+                    // 获取vip，svip
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
                 }
+                // 清除缓存，里面使用了google guava的缓存
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
                 return true;

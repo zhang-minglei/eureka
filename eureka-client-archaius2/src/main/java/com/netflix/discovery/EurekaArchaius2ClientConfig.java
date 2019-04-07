@@ -115,6 +115,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return prefixedConfig.getBoolean(SHOULD_USE_DNS_KEY, false);
     }
 
+    @Override
     public boolean shouldRegisterWithEureka() {
         return prefixedConfig.getBoolean(REGISTRATION_ENABLED_KEY, true);
     }

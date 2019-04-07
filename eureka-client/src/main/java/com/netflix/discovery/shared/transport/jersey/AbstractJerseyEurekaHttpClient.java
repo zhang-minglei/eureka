@@ -42,6 +42,12 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         logger.debug("Created client for url: {}", serviceUrl);
     }
 
+    /**
+     * 向服务端注册
+     *
+     * @param info
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> register(InstanceInfo info) {
         String urlPath = "apps/" + info.getAppName();
@@ -66,6 +72,13 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 向服务的取消
+     *
+     * @param appName
+     * @param id
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> cancel(String appName, String id) {
         String urlPath = "apps/" + appName + '/' + id;

@@ -850,20 +850,25 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Shuts down Eureka Client. Also sends a deregistration request to the
      * eureka server.
+     * eureka客户端停止时，需要向eureka服务端发送注销请求
      */
     @PreDestroy
     @Override
     public synchronized void shutdown() {
+        // cas设置shutdown状态
         if (isShutdown.compareAndSet(false, true)) {
             logger.info("Shutting down DiscoveryClient ...");
 
+            // 移除listener
             if (statusChangeListener != null && applicationInfoManager != null) {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
 
+            // 停止定时任务
             cancelScheduledTasks();
 
             // If APPINFO was registered
+            // 需要取消注册时，调用unregister
             if (applicationInfoManager != null
                     && clientConfig.shouldRegisterWithEureka()
                     && clientConfig.shouldUnregisterOnShutdown()) {
@@ -883,7 +888,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * unregister w/ the eureka service.
+     * 取消注册eureka的服务.
      */
     void unregister() {
         // It can be null if shouldRegisterWithEureka == false
@@ -1213,7 +1218,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * Initializes all scheduled tasks.
+     * 初始化所有的定时任务.
      */
     private void initScheduledTasks() {
         if (clientConfig.shouldFetchRegistry()) {

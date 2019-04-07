@@ -375,7 +375,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public boolean cancel(final String appName, final String id,
                           final boolean isReplication) {
         if (super.cancel(appName, id, isReplication)) {
+            // 同步注销信息到集群其他节点
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
+            // eureka-server的保护机制
             synchronized (lock) {
                 if (this.expectedNumberOfClientsSendingRenews > 0) {
                     // Since the client wants to cancel it, reduce the number of clients to send renews

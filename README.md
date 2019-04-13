@@ -31,4 +31,5 @@ Eureka
 
 - 主要类：[InstanceResource](./eureka-core/src/main/java/com/netflix/eureka/resources/InstanceResource.java)，方法：``renewLease``
 - 如果```renew```不成功，则返回404，client端则会执行register逻辑
+- ``renew``流程参考[eureka续约流程](./images/eureka续约流程.jpg)
 

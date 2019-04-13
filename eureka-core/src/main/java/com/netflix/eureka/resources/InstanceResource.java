@@ -108,10 +108,12 @@ public class InstanceResource {
             @QueryParam("overriddenstatus") String overriddenStatus,
             @QueryParam("status") String status,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
+        // 是来自客户端续约，还是节点间同步信息
         boolean isFromReplicaNode = "true".equals(isReplication);
         boolean isSuccess = registry.renew(app.getName(), id, isFromReplicaNode);
 
         // Not found in the registry, immediately ask for a register
+        // 续约失败，返回404
         if (!isSuccess) {
             logger.warn("Not Found (Renew): {} - {}", app.getName(), id);
             return Response.status(Status.NOT_FOUND).build();
@@ -302,6 +304,7 @@ public class InstanceResource {
             if ((lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
                 Object[] args = {id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication};
 
+                // lastDirtyTimestamp是客户端传过来的值，它比appInfo的lastDirtyTimestamp是客户端传过来的值大的话返回404
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.debug(
                             "Time to sync, since the last dirty timestamp differs -"
@@ -311,6 +314,8 @@ public class InstanceResource {
                 } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
                     // In the case of replication, send the current instance info in the registry for the
                     // replicating node to sync itself with this one.
+                    //如果是server本地大于lastDirtyTimestamp参数，不是replication模式则返回200，
+                    // replication模式，则返回409 Conflict，让调用方同步自己的数据
                     if (isReplication) {
                         logger.debug(
                                 "Time to sync, since the last dirty timestamp differs -"

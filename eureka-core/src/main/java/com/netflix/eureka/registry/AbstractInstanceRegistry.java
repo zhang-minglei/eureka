@@ -360,12 +360,14 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public boolean renew(String appName, String id, boolean isReplication) {
+        // renew计数器加1
         RENEW.increment(isReplication);
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
         if (gMap != null) {
             leaseToRenew = gMap.get(id);
         }
+        // 实例没找到，返回false
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
             logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
@@ -393,6 +395,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
             renewsLastMin.increment();
+            // 设置更新时间
             leaseToRenew.renew();
             return true;
         }

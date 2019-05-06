@@ -77,6 +77,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<>();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<>();
+    // overriddenStatus内存缓存，1小时过期
     protected final ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
             .newBuilder().initialCapacity(500)
             .expireAfterAccess(1, TimeUnit.HOURS)
@@ -243,6 +244,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                         registrant.getAppName() + "(" + registrant.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status happens
+            // 判断instance的覆盖状态是否等于UNKONW （覆盖状态默认就是UNKNOWN）
+            // 如果不等于UNKNOWN，说明覆盖状态被修改过，如果没有放在overriddenInstanceStatusMap里面，则put进去
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
                         + "overrides", registrant.getOverriddenStatus(), registrant.getId());
@@ -251,6 +254,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     overriddenInstanceStatusMap.put(registrant.getId(), registrant.getOverriddenStatus());
                 }
             }
+            // overriddenStatusFromMap 里面是否存在这个instanceId的覆盖状态
+            // 存在则设置到instance的overriddenStatus
             InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(registrant.getId());
             if (overriddenStatusFromMap != null) {
                 logger.info("Storing overridden status {} from map", overriddenStatusFromMap);
@@ -258,6 +263,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
 
             // Set the status based on the overridden status rules
+            // 按照rule计算实例的最终状态
             InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(registrant, existingLease, isReplication);
             registrant.setStatusWithoutDirty(overriddenInstanceStatus);
 
@@ -477,28 +483,35 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                                 boolean isReplication) {
         try {
             read.lock();
+            // 计数器+1
             STATUS_UPDATE.increment(isReplication);
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> lease = null;
             if (gMap != null) {
                 lease = gMap.get(id);
             }
+            // lease为null直接返回
             if (lease == null) {
                 return false;
             } else {
+                // 设置最新更新时间
                 lease.renew();
+
                 InstanceInfo info = lease.getHolder();
                 // Lease is always created with its instance info object.
                 // This log statement is provided as a safeguard, in case this invariant is violated.
                 if (info == null) {
                     logger.error("Found Lease without a holder for instance id {}", id);
                 }
+                // info存在且status与newStatus不同
                 if ((info != null) && !(info.getStatus().equals(newStatus))) {
                     // Mark service as UP if needed
+                    // newStatus为UP时，看是否设置serviceUpTimestamp值
                     if (InstanceStatus.UP.equals(newStatus)) {
                         lease.serviceUp();
                     }
                     // This is NAC overriden status
+                    // 把newStatus方法覆盖状态map缓存中
                     overriddenInstanceStatusMap.put(id, newStatus);
                     // Set it for transfer of overridden status to replica on
                     // replica start up
@@ -1041,6 +1054,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         if (leaseMap != null) {
             lease = leaseMap.get(id);
         }
+        // lease存在且lease不允许过期或者lease运行过期但lease未过期
         if (lease != null
                 && (!isLeaseExpirationEnabled() || !lease.isExpired())) {
             return decorateInstanceInfo(lease);
@@ -1125,6 +1139,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             leaseDuration = info.getLeaseInfo().getDurationInSecs();
         }
 
+        // 设置leaseInfo
         info.setLeaseInfo(LeaseInfo.Builder.newBuilder()
                 .setRegistrationTimestamp(lease.getRegistrationTimestamp())
                 .setRenewalTimestamp(lease.getLastRenewalTimestamp())

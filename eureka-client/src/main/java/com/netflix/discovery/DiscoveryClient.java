@@ -922,6 +922,7 @@ public class DiscoveryClient implements EurekaClient {
             // applications
             Applications applications = getApplications();
 
+            // 如果是第一次拉取，或者app列表为空，就进行全量拉取，否则就会进行增量拉取
             if (clientConfig.shouldDisableDelta()
                     || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
                     || forceFullRegistryFetch
@@ -936,9 +937,10 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
-                // 从eureka服务器获取完整的注册信息并存储在本地
+                // 从eureka服务器获取完整的注册信息并存储在本地，全量获取
                 getAndStoreFullRegistry();
             } else {
+                // 增量获取
                 getAndUpdateDelta(applications);
             }
             applications.setAppsHashCode(applications.getReconcileHashCode());
@@ -1065,6 +1067,7 @@ public class DiscoveryClient implements EurekaClient {
             delta = httpResponse.getEntity();
         }
 
+        // 增量拉取失败时，全量拉取
         if (delta == null) {
             logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
                     + "Hence got the full registry.");
@@ -1221,6 +1224,7 @@ public class DiscoveryClient implements EurekaClient {
      * 初始化所有的定时任务.
      */
     private void initScheduledTasks() {
+        // 是否需要拉取服务列表，是的话置定时拉取任务
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
             // 从eureka服务器获取注册信息的频率（默认30s一次）
@@ -1228,7 +1232,7 @@ public class DiscoveryClient implements EurekaClient {
             // cacheRefreshExecutord的再次执行的最大延迟倍数,默认最大延迟时间=10 *eureka.client.registryFetchIntervalSeconds
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
             /**
-             * 获取注册表信息的任务，任务在 {@link CacheRefreshThread#refreshRegistry} 里
+             * 获取注册表信息的定时任务，任务在 {@link CacheRefreshThread#refreshRegistry} 里
              */
             scheduler.schedule(
                     new TimedSupervisorTask(
@@ -1421,6 +1425,7 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * The task that fetches the registry information at specified intervals.
+     * 以指定的时间间隔获取注册表信息的任务
      */
     class CacheRefreshThread implements Runnable {
         @Override

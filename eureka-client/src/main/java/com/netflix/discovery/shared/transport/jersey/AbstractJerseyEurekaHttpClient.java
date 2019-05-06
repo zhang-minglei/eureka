@@ -44,6 +44,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
 
     /**
      * 向服务端注册
+     * 对应服务端的接口：eureka-core下的ApplicationResource#addInstance方法
      *
      * @param info
      * @return
@@ -74,6 +75,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
 
     /**
      * 向服务的取消
+     * 对应服务端的接口：eureka-core下的InstanceResource#cancelLease方法
      *
      * @param appName
      * @param id
@@ -98,6 +100,16 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 发送心跳
+     * 对应服务端的接口：eureka-core下的InstanceResource#renewLease方法
+     *
+     * @param appName
+     * @param id
+     * @param info
+     * @param overriddenStatus
+     * @return
+     */
     @Override
     public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
         String urlPath = "apps/" + appName + '/' + id;
@@ -128,6 +140,15 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 对应服务端的接口：eureka-core下的InstanceResource#statusUpdate方法
+     *
+     * @param appName
+     * @param id
+     * @param newStatus
+     * @param info
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
         String urlPath = "apps/" + appName + '/' + id + "/status";
@@ -151,6 +172,14 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 对应服务端的接口：eureka-core下的InstanceResource#deleteStatusUpdate方法
+     *
+     * @param appName
+     * @param id
+     * @param info
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         String urlPath = "apps/" + appName + '/' + id + "/status";
@@ -173,11 +202,23 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 对应服务端的接口：eureka-core下的ApplicationsResource#getContainers方法
+     *
+     * @param regions
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
         return getApplicationsInternal("apps/", regions);
     }
 
+    /**
+     * 对应服务端的接口：eureka-core下的ApplicationsResource#getContainerDifferential方法
+     *
+     * @param regions
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
         return getApplicationsInternal("apps/delta", regions);
